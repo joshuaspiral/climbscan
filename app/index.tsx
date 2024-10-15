@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet, Button } from 'react-native';
-import { useRouter } from 'expo-router'; // Assuming Expo Router
+import { useRouter } from 'expo-router';
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -10,7 +10,7 @@ export default function HomeScreen() {
       <Text style={styles.title}>Welcome to ClimbScan</Text>
       <Button
       title = "Take a Photo of the Climbing Wall"
-        onPress={() => router.push('/camera')} // Navigating to the camera screen
+        onPress={() => router.push('/camera')} 
       />
     </View>
   );

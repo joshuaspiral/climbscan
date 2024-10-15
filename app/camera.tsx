@@ -20,21 +20,19 @@ export default function CameraScreen() {
       // Launch the camera
       let result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false, // You can enable editing if needed
-        quality: 1, // Adjust image quality (0-1)
+        allowsEditing: false,
+        quality: 1,
       });
 
-      // Check if the user canceled the camera or if there's an error
       if (!result.canceled && result.assets) {
         setPhotoUri(result.assets[0].uri);
-        // Navigate to the result screen with the photo URI
+        // Navigate to the result screen with the photo URI as parameter
         router.push({
           pathname: '/result',
           params: { photoUri: result.assets[0].uri },
         });
       }
     } catch (error) {
-      // Handle any unexpected errors
       console.error('Unexpected error: ', error);
       Alert.alert('Error', 'An unexpected error occurred');
     }
