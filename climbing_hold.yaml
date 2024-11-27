@@ -1,0 +1,6 @@
+train: dataset/images/train/
+val: dataset/images/val/      # Path to your validation images
+
+nc: 1  
+names: ['climbing_hold']  # Class names (only one class in this case)
+
