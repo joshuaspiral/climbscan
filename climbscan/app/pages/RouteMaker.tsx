@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Button, TouchableOpacity, Alert } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectHold, removeHold, saveRoute } from './redux/routesSlice';
+import { selectHold, removeHold, saveRoute } from '../redux/routesSlice';
 import { useRouter } from 'expo-router';
 
 export default function RouteMaker() {

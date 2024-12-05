@@ -3,15 +3,15 @@ import { View, Button, Image, StyleSheet, Alert, ActivityIndicator } from 'react
 import * as ImagePicker from 'expo-image-picker';
 import { useRouter } from 'expo-router';
 import { useDispatch } from 'react-redux';
-import { setDetections } from './redux/detectionsSlice';
+import { setDetections } from '../redux/detectionsSlice';
 
 export default function CameraScreen() {
   const router = useRouter();
   const dispatch = useDispatch();
-  
+
   const [photoUri, setPhotoUri] = useState<string | null>(null);
   const [loading, setLoading] = useState<boolean>(false);
-  
+
   const isMounted = useRef(true);
 
   // Cleanup to set the ref to false when the component is unmounted
@@ -55,7 +55,7 @@ export default function CameraScreen() {
       const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then((res) => res.blob());
       formData.append('image', blob, 'photo.jpg');
 
-      const response = await fetch('http://localhost:5000/detect', {
+      const response = await fetch('http://192.168.146.242:5000/detect', {
         method: 'POST',
         body: formData,
         headers: {
