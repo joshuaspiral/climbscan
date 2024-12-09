@@ -55,7 +55,7 @@ export default function CameraScreen() {
       const blob = await fetch(`data:image/jpeg;base64,${base64Data}`).then((res) => res.blob());
       formData.append('image', blob, 'photo.jpg');
 
-      const response = await fetch('http://192.168.146.242:5000/detect', {
+      const response = await fetch('http://localhost:5000/detect', {
         method: 'POST',
         body: formData,
         headers: {
