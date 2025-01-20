@@ -1,11 +1,19 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+interface RouteHold {
+  x: number;
+  y: number;
+  index: number;
+}
+
 interface RouteState {
-  selectedHolds: number[];  // Array of indexes of selected holds
+  selectedHolds: RouteHold[];
+  routes: RouteHold[][];
 }
 
 const initialState: RouteState = {
   selectedHolds: [],
+  routes: [],
 };
 
 const routesSlice = createSlice({
@@ -13,23 +21,24 @@ const routesSlice = createSlice({
   initialState,
   reducers: {
     selectHold: (state, action: PayloadAction<number>) => {
-      if (!state.selectedHolds.includes(action.payload)) {
-        state.selectedHolds.push(action.payload);
+      const hold = state.selectedHolds.find(hold => hold.index === action.payload);
+      if (!hold) {
+        state.selectedHolds.push({ x: 0, y: 0, index: action.payload });
       }
     },
     deselectHold: (state, action: PayloadAction<number>) => {
-      state.selectedHolds = state.selectedHolds.filter(index => index !== action.payload);
-    },
-    clearRoute: (state) => {
-      state.selectedHolds = [];
+      state.selectedHolds = state.selectedHolds.filter(hold => hold.index !== action.payload);
     },
     saveRoute: (state) => {
-    // wip
+      state.routes.push([...state.selectedHolds]);
+      state.selectedHolds = [];
+    },
+    clearSelectedHolds: (state) => {
+      state.selectedHolds = [];
     },
   },
 });
 
-export const { selectHold, deselectHold, clearRoute, saveRoute } = routesSlice.actions;
+export const { selectHold, deselectHold, saveRoute, clearSelectedHolds } = routesSlice.actions;
 
 export default routesSlice.reducer;
-

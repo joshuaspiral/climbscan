@@ -7,7 +7,8 @@ const store = configureStore({
     detections: detectionsReducer,
     routes: routesReducer,
   },
+  middleware: (getDefaultMiddleware) => getDefaultMiddleware().concat(),
 });
 
-export default store;
 
+export default store;

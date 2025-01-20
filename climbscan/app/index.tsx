@@ -10,7 +10,7 @@ export default function HomeScreen() {
       <Text style={styles.title}>Welcome to ClimbScan</Text>
       <Button
         title="Take a Photo of the Climbing Wall"
-        onPress={() => router.push('/pages/camera')} 
+        onPress={() => router.push('/camera')}
       />
     </View>
   );

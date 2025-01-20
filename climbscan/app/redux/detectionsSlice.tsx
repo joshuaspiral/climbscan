@@ -1,27 +1,43 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
+interface Detection {
+  bounding_box: number[];
+  confidence: number;
+}
+
 interface DetectionState {
-  detections: Array<{ bounding_box: number[], class_id: number, confidence: number }>;
+  photoUri: string | null;
+  detections: Detection[];
+  photoDimensions: { width: number; height: number } | null;
 }
 
 const initialState: DetectionState = {
+  photoUri: null,
   detections: [],
+  photoDimensions: null,
 };
 
 const detectionsSlice = createSlice({
   name: 'detections',
   initialState,
   reducers: {
-    setDetections: (state, action: PayloadAction<Array<{ bounding_box: number[], class_id: number, confidence: number }>>) => {
+    setPhotoUri: (state, action: PayloadAction<string>) => {
+      state.photoUri = action.payload;
+    },
+    setDetections: (state, action: PayloadAction<Detection[]>) => {
       state.detections = action.payload;
+    },
+    setPhotoDimensions: (state, action: PayloadAction<{ width: number; height: number }>) => {
+      state.photoDimensions = action.payload;
     },
     clearDetections: (state) => {
       state.detections = [];
+      state.photoUri = null;
+      state.photoDimensions = null;
     },
   },
 });
 
-export const { setDetections, clearDetections } = detectionsSlice.actions;
+export const { setPhotoUri, setDetections, setPhotoDimensions, clearDetections } = detectionsSlice.actions;
 
 export default detectionsSlice.reducer;
-
