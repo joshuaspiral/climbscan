@@ -27,11 +27,12 @@ export default function CameraScreen() {
         Alert.alert('Error', 'Camera permissions are required to take a photo');
         return;
       }
+      console.log('gonna take now')
 
       let result = await ImagePicker.launchCameraAsync({
-        mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: false,
-        quality: 1,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0,
       });
 
       if (!result.canceled && result.assets) {
@@ -42,20 +43,25 @@ export default function CameraScreen() {
         dispatch(setPhotoDimensions({ width, height }));
 
         // Call the API with the photo URI
+        console.log( 'calling now');
+        
         const formData = new FormData();
         const response = await fetch(uri);
         const blob = await response.blob();
         formData.append('image', blob, 'photo.jpg');
+        console.log( 'created form data now goO!!');
 
-        const apiResponse = await fetch('http://localhost:5000/detect', {
+        const apiResponse = await fetch('http://192.168.1.12:5000/detect', {
           method: 'POST',
           body: formData,
           headers: {
             'Accept': 'application/json',
           },
         });
+        
 
         const data = await apiResponse.json();
+        console.log('data', data.detections);
         dispatch(setDetections(data.detections));
         navigation.navigate('result');
       }

@@ -1,79 +1,107 @@
 import React, { useState } from 'react';
-import { View, Image, StyleSheet, Text, Dimensions } from 'react-native';
+import { View, Image, StyleSheet, Text } from 'react-native';
 import { useSelector } from 'react-redux';
 import Svg, { Rect } from 'react-native-svg';
 
-const ResultScreen = () => {
-  const { photoUri, photoDimensions, detections } = useSelector((state) => state.detections);
-  const [layout, setLayout] = useState({ width: 0, height: 0 });
+interface Detection {
+  bounding_box: [number, number, number, number]; // x, y, width, height normalized between 0-1
+}
 
-  if (!photoDimensions) {
+interface State {
+  detections: {
+    photoUri: string;
+    photoDimensions: { width: number; height: number };
+    detections: Detection[];
+  };
+}
+
+const ResultScreen = () => {
+  const { photoUri, photoDimensions, detections } = useSelector((state: State) => state.detections);
+  const [containerLayout, setContainerLayout] = useState({
+    width: 0,
+    height: 0,
+  });
+
+  if (!photoDimensions || !detections) {
     return (
       <View style={styles.container}>
-        <Text>No photo dimensions available</Text>
+        <Text>Loading...</Text>
       </View>
     );
   }
 
-  const { width: imageWidth, height: imageHeight } = photoDimensions;
+  const containerAspect = containerLayout.width / containerLayout.height;
+  const imageAspect = photoDimensions.width / photoDimensions.height;
 
-  const windowWidth = Dimensions.get('window').width;
-  const windowHeight = Dimensions.get('window').height;
-  const windowAspectRatio = windowWidth / windowHeight;
-  const imageAspectRatio = imageWidth / imageHeight;
+  let displayedWidth = containerLayout.width;
+  let displayedHeight = containerLayout.height;
+  let offsetX = 0;
+  let offsetY = 0;
 
-  let displayWidth, displayHeight, paddingX, paddingY;
-
-  console.log("Display Dimensions:", windowWidth, windowHeight);
-  if (imageAspectRatio > windowAspectRatio) {
-    // Image is wider than the container, fit by width
-    paddingX = 0;
-    paddingY = (windowHeight - imageHeight) / 2; // Center vertically
+  if (imageAspect > containerAspect) {
+    displayedHeight = containerLayout.width / imageAspect;
+    offsetY = (containerLayout.height - displayedHeight) / 2;
   } else {
-    // Image is taller than the container, fit by height
-    paddingY = 0;
-    console.log(windowWidth, imageWidth);
-    
-    paddingX = (windowWidth - imageWidth) / 2; // Center horizontally
+    displayedWidth = containerLayout.height * imageAspect;
+    offsetX = (containerLayout.width - displayedWidth) / 2;
   }
 
-  console.log("Padding:", paddingX, paddingY);
+  console.log('Container layout:', containerLayout);
+  console.log('Original dimensions:', photoDimensions);
+  console.log('Displayed dimensions:', { displayedWidth, displayedHeight });
+  console.log('Offsets:', { offsetX, offsetY });
 
   return (
     <View style={styles.container}>
-      <View onLayout={(event) => {
-        const { width, height } = event.nativeEvent.layout;
-        setLayout({ width, height });
-      }} style={styles.imageContainer}>
-        <Image 
-          source={{ uri: photoUri }} 
-          style={styles.image} 
+      <View 
+        style={styles.imageContainer}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          setContainerLayout({ width, height });
+        }}
+      >
+        <Image
+          source={{ uri: photoUri }}
+          style={styles.image}
           resizeMode="contain"
         />
-        <Svg style={StyleSheet.absoluteFill} viewBox={`0 0 ${windowWidth} ${windowHeight}`}>
-          {detections.map((detection, index) => {
-            const [x_center, y_center, width, height] = detection.bounding_box;
 
-            // Scale YOLO coordinates to displayed dimensions
-            const rectX = paddingX + (x_center - width / 2) * displayWidth; // Convert x_center to top-left x
-            const rectY = paddingY + (y_center - height / 2) * displayHeight; // Convert y_center to top-left y
-            const rectWidth = width * displayWidth; // Scale width
-            const rectHeight = height * displayHeight; // Scale height
-            console.log(`Bounding Box ${index}:`, rectX, rectY, rectWidth, rectHeight);
+        <Svg style={StyleSheet.absoluteFill}>
+          {detections.map((detection: Detection, index: number) => {
+            const [normX, normY, normWidth, normHeight] = detection.bounding_box;
+            // console.log('Normalized box:', { normX, normY, normWidth, normHeight });
+
+            const x = normX * displayedWidth + offsetX;
+            const y = normY * displayedHeight + offsetY;
+            const width = normWidth * displayedWidth;
+            const height = normHeight * displayedHeight;
+
+            // console.log('Calculated rect:', { x, y, width, height });
 
             return (
               <Rect
                 key={index}
-                x={rectX}
-                y={rectY}
-                width={rectWidth}
-                height={rectHeight}
+                x={x}
+                y={y}
+                width={width}
+                height={height}
                 stroke="red"
                 strokeWidth="2"
                 fill="none"
               />
             );
           })}
+
+  {/* // this code is just to draw a blue rectangle around the entire container as a test. however, as you can see in the photo, it gets cut off at the top left corner at around 300x215 pixels */}
+          <Rect
+            x={0}
+            y={0}
+            width={containerLayout.width}
+            height={containerLayout.height}
+            stroke="blue"
+            strokeWidth="2"
+            fill="none"
+          />
         </Svg>
       </View>
     </View>
@@ -89,10 +117,10 @@ const styles = StyleSheet.create({
   imageContainer: {
     width: '100%',
     height: '100%',
+    position: 'relative',
   },
   image: {
-    width: '100%',
-    height: '100%',
+    flex: 1,
   },
 });
 

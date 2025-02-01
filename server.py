@@ -9,9 +9,7 @@ import base64
 app = Flask(__name__)
 
 CORS(app)
-# CORS is needed for using react-native as client
 
-# Load YOLOv8 model
 model = YOLO("climbscan/last.pt")  
 
 @app.route('/detect', methods=['POST'])
@@ -33,11 +31,11 @@ def detect():
     results = model(img)
     detections = [
         {
-            "bounding_box": box.xyxy[0].tolist(),
+            "bounding_box": box.xywhn[0].tolist(),
             "confidence": box.conf[0].item(),
             "class_id": int(box.cls[0]),
         }
-        for box in results[0].boxes
+        for box in results[0].boxes if results[0].boxes.conf[0] > 0.8
     ]
     return jsonify({"detections": detections})
 
