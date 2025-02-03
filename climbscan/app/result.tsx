@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux';
 import Svg, { Rect } from 'react-native-svg';
 
 interface Detection {
-  bounding_box: [number, number, number, number]; // x, y, width, height normalized between 0-1
+  bounding_box: [number, number, number, number]; // x, y, width, height normalised between 0-1
 }
 
 interface State {
@@ -46,11 +46,6 @@ const ResultScreen = () => {
     offsetX = (containerLayout.width - displayedWidth) / 2;
   }
 
-  console.log('Container layout:', containerLayout);
-  console.log('Original dimensions:', photoDimensions);
-  console.log('Displayed dimensions:', { displayedWidth, displayedHeight });
-  console.log('Offsets:', { offsetX, offsetY });
-
   return (
     <View style={styles.container}>
       <View 
@@ -66,17 +61,24 @@ const ResultScreen = () => {
           resizeMode="contain"
         />
 
-        <Svg style={StyleSheet.absoluteFill}>
+        // position like image
+        <Svg 
+          style={{
+            position: 'absolute',
+            left: offsetX,
+            top: offsetY,
+            width: displayedWidth,
+            height: displayedHeight,
+          }}
+          viewBox={`0 0 ${photoDimensions.width} ${photoDimensions.height}`}
+        >
           {detections.map((detection: Detection, index: number) => {
             const [normX, normY, normWidth, normHeight] = detection.bounding_box;
-            // console.log('Normalized box:', { normX, normY, normWidth, normHeight });
-
-            const x = normX * displayedWidth + offsetX;
-            const y = normY * displayedHeight + offsetY;
-            const width = normWidth * displayedWidth;
-            const height = normHeight * displayedHeight;
-
-            // console.log('Calculated rect:', { x, y, width, height });
+            
+            const x = normX * photoDimensions.width;
+            const y = normY * photoDimensions.height;
+            const width = normWidth * photoDimensions.width;
+            const height = normHeight * photoDimensions.height;
 
             return (
               <Rect
@@ -92,12 +94,11 @@ const ResultScreen = () => {
             );
           })}
 
-  {/* // this code is just to draw a blue rectangle around the entire container as a test. however, as you can see in the photo, it gets cut off at the top left corner at around 300x215 pixels */}
           <Rect
             x={0}
             y={0}
-            width={containerLayout.width}
-            height={containerLayout.height}
+            width={photoDimensions.width}
+            height={photoDimensions.height}
             stroke="blue"
             strokeWidth="2"
             fill="none"

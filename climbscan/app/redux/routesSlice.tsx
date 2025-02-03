@@ -1,8 +1,6 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 
 interface RouteHold {
-  x: number;
-  y: number;
   index: number;
 }
 
@@ -20,14 +18,15 @@ const routesSlice = createSlice({
   name: 'routes',
   initialState,
   reducers: {
-    selectHold: (state, action: PayloadAction<number>) => {
-      const hold = state.selectedHolds.find(hold => hold.index === action.payload);
-      if (!hold) {
-        state.selectedHolds.push({ x: 0, y: 0, index: action.payload });
+    selectHold: (state, action) => {
+      if (!state.selectedHolds.includes(action.payload)) {
+        state.selectedHolds.push(action.payload);
       }
     },
-    deselectHold: (state, action: PayloadAction<number>) => {
-      state.selectedHolds = state.selectedHolds.filter(hold => hold.index !== action.payload);
+    deselectHold: (state, action) => {
+      state.selectedHolds = state.selectedHolds.filter(
+        id => id !== action.payload
+      );
     },
     saveRoute: (state) => {
       state.routes.push([...state.selectedHolds]);
