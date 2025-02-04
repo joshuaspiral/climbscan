@@ -61,7 +61,6 @@ const ResultScreen = () => {
           resizeMode="contain"
         />
 
-        // position like image
         <Svg 
           style={{
             position: 'absolute',
