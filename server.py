@@ -1,16 +1,14 @@
 from flask import Flask, request, jsonify
-import torch
 from ultralytics import YOLO
 from PIL import Image
 import io
 from flask_cors import CORS
-import base64
 
 app = Flask(__name__)
 
 CORS(app)
 
-model = YOLO("climbscan/last.pt")  
+model = YOLO("climbscan/model.pt")  
 
 @app.route('/detect', methods=['POST'])
 def detect():
