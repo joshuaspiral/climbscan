@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Button, StyleSheet, Image, ActivityIndicator, Alert } from 'react-native';
+import { View, TouchableOpacity, StyleSheet, Image, ActivityIndicator, Alert, Text } from 'react-native';
 import { useDispatch } from 'react-redux';
 import { useNavigation } from '@react-navigation/native';
 import * as ImagePicker from 'expo-image-picker';
@@ -27,7 +27,6 @@ export default function CameraScreen() {
         Alert.alert('Error', 'Camera permissions are required to take a photo');
         return;
       }
-      console.log('gonna take now')
 
       let result = await ImagePicker.launchCameraAsync({
         allowsEditing: true,
@@ -42,14 +41,10 @@ export default function CameraScreen() {
         dispatch(setPhotoUri(uri));
         dispatch(setPhotoDimensions({ width, height }));
 
-        // Call the API with the photo URI
-        console.log( 'calling now');
-        
         const formData = new FormData();
         const response = await fetch(uri);
         const blob = await response.blob();
         formData.append('image', blob, 'photo.jpg');
-        console.log( 'created form data now goO!!');
 
         const apiResponse = await fetch('http://localhost:5000/detect', {
           method: 'POST',
@@ -58,10 +53,8 @@ export default function CameraScreen() {
             'Accept': 'application/json',
           },
         });
-        
 
         const data = await apiResponse.json();
-        console.log('data', data.detections);
         dispatch(setDetections(data.detections));
         navigation.navigate('routemaker');
       }
@@ -77,8 +70,10 @@ export default function CameraScreen() {
 
   return (
     <View style={styles.container}>
-      <Button title="Take a photo" onPress={takePhoto} />
-      {loading && <ActivityIndicator size="large" color="#0000ff" />}
+      <TouchableOpacity style={styles.button} onPress={takePhoto}>
+        <Text style={styles.buttonText}>Take a Photo</Text>
+      </TouchableOpacity>
+      {loading && <ActivityIndicator size="large" color="#007BFF" />}
       {photoUri && <Image source={{ uri: photoUri }} style={styles.image} />}
     </View>
   );
@@ -89,10 +84,26 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    padding: 20,
+    backgroundColor: '#F5F5F5', 
+  },
+  button: {
+    backgroundColor: '#007BFF',  // Primary color for buttons
+    borderRadius: 10,
+    padding: 15,
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  buttonText: {
+    color: '#FFFFFF',  // White text for contrast
+    fontSize: 18,
+    fontWeight: 'bold',
   },
   image: {
-    width: 300,
-    height: 400,
+    width: '100%',  // Full width image
+    height: undefined,
+    aspectRatio: 3 / 4,  // Maintain aspect ratio
+    borderRadius: 10,
     marginTop: 20,
   },
 });

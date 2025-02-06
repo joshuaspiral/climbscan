@@ -6,31 +6,23 @@ interface RouteHold {
 
 interface RouteState {
   selectedHolds: RouteHold[];
-  routes: RouteHold[][];
 }
 
 const initialState: RouteState = {
   selectedHolds: [],
-  routes: [],
 };
 
 const routesSlice = createSlice({
   name: 'routes',
   initialState,
   reducers: {
-    selectHold: (state, action) => {
-      if (!state.selectedHolds.includes(action.payload)) {
+    selectHold: (state, action: PayloadAction<RouteHold>) => {
+      if (!state.selectedHolds.some(hold => hold.index === action.payload.index)) {
         state.selectedHolds.push(action.payload);
       }
     },
-    deselectHold: (state, action) => {
-      state.selectedHolds = state.selectedHolds.filter(
-        id => id !== action.payload
-      );
-    },
-    saveRoute: (state) => {
-      state.routes.push([...state.selectedHolds]);
-      state.selectedHolds = [];
+    deselectHold: (state, action: PayloadAction<RouteHold>) => {
+      state.selectedHolds = state.selectedHolds.filter(hold => hold.index !== action.payload.index);
     },
     clearSelectedHolds: (state) => {
       state.selectedHolds = [];
@@ -38,6 +30,5 @@ const routesSlice = createSlice({
   },
 });
 
-export const { selectHold, deselectHold, saveRoute, clearSelectedHolds } = routesSlice.actions;
-
+export const { selectHold, deselectHold, clearSelectedHolds } = routesSlice.actions;
 export default routesSlice.reducer;

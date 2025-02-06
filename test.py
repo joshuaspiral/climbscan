@@ -2,10 +2,10 @@ from ultralytics import YOLO
 from PIL import Image
 
 # Load YOLOv8 model
-model = YOLO("climbscan/last.pt")  # Replace with your model path
+model = YOLO("climbscan/model.pt")  # Replace with your model path
 
 # Load an image
-image_path = "/home/joshua/Desktop/test.jpg"
+image_path = "/home/joshua/datasets/dataset/images/train/IMG_3343.jpg"
 image = Image.open(image_path)
 
 # Perform object detection

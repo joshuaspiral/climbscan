@@ -1,27 +1,42 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, Alert, Image } from 'react-native';
-import { useSelector, useDispatch } from 'react-redux';
-import { selectHold, deselectHold, saveRoute } from './redux/routesSlice';
+import { View, Text, StyleSheet, Button, Image } from 'react-native';
+import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 import Svg, { Rect } from 'react-native-svg';
+import * as FileSystem from 'expo-file-system';
+import * as MediaLibrary from 'expo-media-library';
+import * as Sharing from 'expo-sharing';
 
-const PLACEHOLDER_PHOTO_URI = 'https://placehold.co/600x400'; 
-const PLACEHOLDER_DETECTIONS = [
-  { bounding_box: [0.2, 0.3, 0.4, 0.5] },
-  { bounding_box: [0.5, 0.2, 0.7, 0.4] },
-  { bounding_box: [0.3, 0.6, 0.5, 0.8] },
-];
-const PLACEHOLDER_PHOTO_DIMENSIONS = { width: 300, height: 400 };
+// Define interface for hold detection bounding box coordinates
+interface Detection {
+  bounding_box: [number, number, number, number];
+}
+
+interface State {
+  detections: {
+    photoUri: string;
+    photoDimensions: { width: number; height: number };
+    detections: Detection[];
+  };
+}
+
+// Define possible types of holds
+type HoldType = 'intermediate' | 'start' | 'end';
 
 export default function RouteMaker() {
   const router = useRouter();
-  const dispatch = useDispatch();
-  const selectedHolds = useSelector(state => state.routes.selectedHolds) || [];
+
+  // Retrieve data from the Redux store
+  const { photoUri, photoDimensions, detections } = useSelector(
+    (state: State) => state.detections
+  );
+
   const [containerLayout, setContainerLayout] = useState({ width: 0, height: 0 });
-  const [isSaving, setIsSaving] = useState(false);
+  
+  // Hold selections with type mapping (start, intermediate, end)
+  const [holdSelections, setHoldSelections] = useState<{ [key: number]: HoldType }>({});
 
-  const { photoUri, photoDimensions, detections } = useSelector((state: State) => state.detections);
-
+  // Handle the layout not being available
   if (!photoDimensions || !detections) {
     return (
       <View style={styles.container}>
@@ -29,10 +44,11 @@ export default function RouteMaker() {
       </View>
     );
   }
-  // Calculate image display dimensions
+
+  // Calculate image scaling and offset for display
   const containerAspect = containerLayout.width / containerLayout.height;
   const imageAspect = photoDimensions.width / photoDimensions.height;
-  
+
   let displayedWidth = containerLayout.width;
   let displayedHeight = containerLayout.height;
   let offsetX = 0;
@@ -46,45 +62,74 @@ export default function RouteMaker() {
     offsetX = (containerLayout.width - displayedWidth) / 2;
   }
 
+  // Handle toggling between different hold types
   const handleSelectHold = (index: number) => {
-    if (selectedHolds.includes(index)) {
-      dispatch(deselectHold(index));
-    } else {
-      dispatch(selectHold(index));
+    setHoldSelections((prev) => {
+      const current = prev[index];
+      if (!current) {
+        return { ...prev, [index]: 'intermediate' };
+      } else if (current === 'intermediate') {
+        return { ...prev, [index]: 'start' };
+      } else if (current === 'start') {
+        return { ...prev, [index]: 'end' };
+      } else if (current === 'end') {
+        const newSelections = { ...prev };
+        delete newSelections[index];
+        return newSelections;
+      }
+      return prev;
+    });
+  };
+
+  // Clear all selected holds
+  const handleClearSelection = () => {
+    setHoldSelections({});
+  };
+
+  // Save the route image and share it
+  const handleSaveRoute = async () => {
+    try {
+      const imageName = `${FileSystem.documentDirectory}route.png`;
+      const downloadImage = await FileSystem.downloadAsync(photoUri, imageName);
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+
+      if (status === 'granted') {
+        await MediaLibrary.createAssetAsync(downloadImage.uri);
+        Sharing.shareAsync(downloadImage.uri);
+        alert('Route saved and ready to share!');
+      }
+    } catch (error) {
+      alert('Error saving the route.');
     }
   };
 
-  const handleSaveRoute = () => {
-    if (selectedHolds.length === 0) {
-      Alert.alert('Error', 'Please select at least one hold to create a route');
-      return;
+  // Get stroke color based on the hold type
+  const getStrokeColor = (holdType?: HoldType) => {
+    switch (holdType) {
+      case 'intermediate':
+        return 'green';
+      case 'start':
+        return 'blue';
+      case 'end':
+        return 'purple';
+      default:
+        return 'red';
     }
-
-    setIsSaving(true);
-    dispatch(saveRoute());
-    Alert.alert('Success', 'Route saved!');
-    setIsSaving(false);
-    router.push('/routes');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create a Route</Text>
-
-      <View 
+      <Text style={styles.title}>Select Holds for Your Route</Text>
+      
+      <View
         style={styles.imageContainer}
         onLayout={(event) => {
           const { width, height } = event.nativeEvent.layout;
           setContainerLayout({ width, height });
         }}
       >
-        <Image
-          source={{ uri: photoUri }}
-          style={styles.image}
-          resizeMode="contain"
-        />
-
-        <Svg 
+        <Image source={{ uri: photoUri }} style={styles.image} resizeMode="contain" />
+        <Svg
           style={{
             position: 'absolute',
             left: offsetX,
@@ -95,33 +140,44 @@ export default function RouteMaker() {
           viewBox={`0 0 ${photoDimensions.width} ${photoDimensions.height}`}
           pointerEvents="box-none"
         >
-          {detections.map((detection, index) => {
+          {detections.map((detection: Detection, index: number) => {
             const [normX, normY, normWidth, normHeight] = detection.bounding_box;
             const x = normX * photoDimensions.width;
             const y = normY * photoDimensions.height;
             const width = normWidth * photoDimensions.width;
             const height = normHeight * photoDimensions.height;
+            const holdType = holdSelections[index];
 
             return (
               <Rect
                 key={index}
-                x={x - width/2}
-                y={y - height/2}
+                x={x - width / 2}
+                y={y - height / 2}
                 width={width}
                 height={height}
-                stroke={selectedHolds.includes(index) ? "green" : "red"}
+                stroke={getStrokeColor(holdType)}
                 strokeWidth="16"
                 fill="rgba(0,0,0,0.01)"
                 onPress={() => handleSelectHold(index)}
                 pointerEvents="auto"
-                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               />
             );
           })}
         </Svg>
       </View>
+      
+      {/* Buttons for user actions */}
+      <Button title="Clear Selection" onPress={handleClearSelection} />
+      <Button title="Save Route" onPress={handleSaveRoute} />
+      <Text>Holds selected: {Object.keys(holdSelections).length}</Text>
 
-      <Button title="Save Route" onPress={handleSaveRoute} disabled={isSaving} />
+      {/* Color-coded legend */}
+      <View style={styles.legend}>
+        <Text style={[styles.legendItem, { color: 'red' }]}>Red: Not Selected</Text>
+        <Text style={[styles.legendItem, { color: 'green' }]}>Green: Intermediate Hold</Text>
+        <Text style={[styles.legendItem, { color: 'blue' }]}>Blue: Start Hold</Text>
+        <Text style={[styles.legendItem, { color: 'purple' }]}>Purple: End Hold</Text>
+      </View>
     </View>
   );
 }
@@ -132,19 +188,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#F5F5F5',
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    color: '#333',
   },
   imageContainer: {
     width: '100%',
-    height: 400, // Adjust as needed
+    height: 400,
     position: 'relative',
     marginBottom: 20,
   },
   image: {
     flex: 1,
+    borderRadius: 10,
+  },
+  legend: {
+    marginTop: 20,
+  },
+  legendItem: {
+    fontSize: 16,
+    marginVertical: 4,
   },
 });
