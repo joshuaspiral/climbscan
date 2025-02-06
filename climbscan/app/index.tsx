@@ -12,6 +12,10 @@ export default function HomeScreen() {
         title="Take a Photo of the Climbing Wall"
         onPress={() => router.push('/camera')}
       />
+      <Button
+        title="Click here for instructions!"
+        onPress={() => router.push('/instructions')}
+      />
     </View>
   );
 }

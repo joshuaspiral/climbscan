@@ -5,7 +5,7 @@ from PIL import Image
 model = YOLO("climbscan/last.pt")  # Replace with your model path
 
 # Load an image
-image_path = "/home/joshua/datasets/dataset/images/train/IMG_3344.jpg"  # Replace with your image path
+image_path = "/home/joshua/Desktop/test.jpg"
 image = Image.open(image_path)
 
 # Perform object detection

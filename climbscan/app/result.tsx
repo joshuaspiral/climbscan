@@ -82,11 +82,11 @@ const ResultScreen = () => {
             return (
               <Rect
                 key={index}
-                x={x}
-                y={y}
+                x={x - width/2}
+                y={y - height/2}
                 width={width}
                 height={height}
-                stroke="red"
+                stroke="white"
                 strokeWidth="2"
                 fill="none"
               />

@@ -63,7 +63,7 @@ export default function CameraScreen() {
         const data = await apiResponse.json();
         console.log('data', data.detections);
         dispatch(setDetections(data.detections));
-        navigation.navigate('result');
+        navigation.navigate('routemaker');
       }
     } catch (error) {
       console.error('Unexpected error: ', error);

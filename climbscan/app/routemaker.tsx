@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, Alert, Image, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, Button, Alert, Image } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
 import { selectHold, deselectHold, saveRoute } from './redux/routesSlice';
 import { useRouter } from 'expo-router';
@@ -17,17 +17,36 @@ export default function RouteMaker() {
   const router = useRouter();
   const dispatch = useDispatch();
   const selectedHolds = useSelector(state => state.routes.selectedHolds) || [];
-
+  const [containerLayout, setContainerLayout] = useState({ width: 0, height: 0 });
   const [isSaving, setIsSaving] = useState(false);
 
-  // Use placeholder data instead of Redux state
-  const photoUri = PLACEHOLDER_PHOTO_URI;
-  const detections = PLACEHOLDER_DETECTIONS;
-  const photoDimensions = PLACEHOLDER_PHOTO_DIMENSIONS;
+  const { photoUri, photoDimensions, detections } = useSelector((state: State) => state.detections);
+
+  if (!photoDimensions || !detections) {
+    return (
+      <View style={styles.container}>
+        <Text>Loading...</Text>
+      </View>
+    );
+  }
+  // Calculate image display dimensions
+  const containerAspect = containerLayout.width / containerLayout.height;
+  const imageAspect = photoDimensions.width / photoDimensions.height;
+  
+  let displayedWidth = containerLayout.width;
+  let displayedHeight = containerLayout.height;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  if (imageAspect > containerAspect) {
+    displayedHeight = containerLayout.width / imageAspect;
+    offsetY = (containerLayout.height - displayedHeight) / 2;
+  } else {
+    displayedWidth = containerLayout.height * imageAspect;
+    offsetX = (containerLayout.width - displayedWidth) / 2;
+  }
 
   const handleSelectHold = (index: number) => {
-    console.log(index, selectedHolds);
-    
     if (selectedHolds.includes(index)) {
       dispatch(deselectHold(index));
     } else {
@@ -52,48 +71,50 @@ export default function RouteMaker() {
     <View style={styles.container}>
       <Text style={styles.title}>Create a Route</Text>
 
-      <View style={{ position: 'relative' }}>
-        <Image 
-          source={{ uri: photoUri }} 
-          style={{ width: photoDimensions.width, height: photoDimensions.height }} 
+      <View 
+        style={styles.imageContainer}
+        onLayout={(event) => {
+          const { width, height } = event.nativeEvent.layout;
+          setContainerLayout({ width, height });
+        }}
+      >
+        <Image
+          source={{ uri: photoUri }}
+          style={styles.image}
+          resizeMode="contain"
         />
 
         <Svg 
-          style={[
-            StyleSheet.absoluteFill, 
-            { 
-              width: photoDimensions.width, 
-              height: photoDimensions.height,
-              zIndex: 1 // Ensure SVG is above the image
-            }
-          ]}
-          pointerEvents="box-none" // Allow touches to pass through
+          style={{
+            position: 'absolute',
+            left: offsetX,
+            top: offsetY,
+            width: displayedWidth,
+            height: displayedHeight,
+          }}
+          viewBox={`0 0 ${photoDimensions.width} ${photoDimensions.height}`}
+          pointerEvents="box-none"
         >
           {detections.map((detection, index) => {
-            const [x, y, width, height] = detection.bounding_box;
-            const normalizedX = x * photoDimensions.width;
-            const normalizedY = y * photoDimensions.height;
-            const normalizedWidth = width * photoDimensions.width;
-            const normalizedHeight = height * photoDimensions.height;
+            const [normX, normY, normWidth, normHeight] = detection.bounding_box;
+            const x = normX * photoDimensions.width;
+            const y = normY * photoDimensions.height;
+            const width = normWidth * photoDimensions.width;
+            const height = normHeight * photoDimensions.height;
 
             return (
               <Rect
                 key={index}
-                x={normalizedX}
-                y={normalizedY}
-                width={normalizedWidth}
-                height={normalizedHeight}
+                x={x - width/2}
+                y={y - height/2}
+                width={width}
+                height={height}
                 stroke={selectedHolds.includes(index) ? "green" : "red"}
-                strokeWidth="2"
-                fill="rgba(0,0,0,0.01)" // Nearly transparent but tappable
+                strokeWidth="16"
+                fill="rgba(0,0,0,0.01)"
                 onPress={() => handleSelectHold(index)}
-                pointerEvents="auto" // Explicitly enable pointer events
-                hitSlop={{ // to extend clickable area
-                  top: 10,
-                  bottom: 10,
-                  left: 10,
-                  right: 10
-                }}
+                pointerEvents="auto"
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
               />
             );
           })}
@@ -104,7 +125,6 @@ export default function RouteMaker() {
     </View>
   );
 }
-
 
 const styles = StyleSheet.create({
   container: {
@@ -117,5 +137,14 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+  },
+  imageContainer: {
+    width: '100%',
+    height: 400, // Adjust as needed
+    position: 'relative',
+    marginBottom: 20,
+  },
+  image: {
+    flex: 1,
   },
 });
