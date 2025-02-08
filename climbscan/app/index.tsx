@@ -24,23 +24,23 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#F5F5F5',  // Light background color for better contrast
+    backgroundColor: '#F5F5F5',
   },
   title: {
-    fontSize: 28,  // Slightly larger title
+    fontSize: 28,
     fontWeight: 'bold',
     marginBottom: 30,
-    color: '#333',  // Darker color for readability
+    color: '#333',
   },
   button: {
     padding: 15,
     backgroundColor: '#007BFF',
     borderRadius: 10,
-    marginVertical: 10,  // Space between buttons
-    alignItems: 'center',  // Center text in button
+    marginVertical: 10,
+    alignItems: 'center',
   },
   buttonText: {
-    color: '#FFFFFF',  // White text for contrast
+    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
   },

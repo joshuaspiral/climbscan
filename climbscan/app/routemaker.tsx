@@ -86,7 +86,7 @@ export default function RouteMaker() {
     setHoldSelections({});
   };
 
-  // Save the route image and share it
+  // Save the route image
   const handleSaveRoute = async () => {
     try {
       const imageName = `${FileSystem.documentDirectory}route.png`;
