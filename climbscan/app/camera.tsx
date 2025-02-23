@@ -29,9 +29,7 @@ export default function CameraScreen() {
       }
 
       let result = await ImagePicker.launchCameraAsync({
-        allowsEditing: true,
-        aspect: [4, 3],
-        quality: 0,
+        quality: 1,
       });
 
       if (!result.canceled && result.assets) {
@@ -44,13 +42,15 @@ export default function CameraScreen() {
         const formData = new FormData();
         const response = await fetch(uri);
         const blob = await response.blob();
-        formData.append('image', blob, 'photo.jpg');
+        formData.append('image', { uri, type: 'image/jpeg', name: 'photo.jpg' });
+        
 
-        const apiResponse = await fetch('http://localhost:5000/detect', {
+        const apiResponse = await fetch('http://192.168.1.12:5000/detect', {
           method: 'POST',
           body: formData,
           headers: {
             'Accept': 'application/json',
+            'API-KEY': 'APIKEY'
           },
         });
 
@@ -74,7 +74,6 @@ export default function CameraScreen() {
         <Text style={styles.buttonText}>Take a Photo</Text>
       </TouchableOpacity>
       {loading && <ActivityIndicator size="large" color="#007BFF" />}
-      {photoUri && <Image source={{ uri: photoUri }} style={styles.image} />}
     </View>
   );
 }
@@ -88,22 +87,15 @@ const styles = StyleSheet.create({
     backgroundColor: '#F5F5F5', 
   },
   button: {
-    backgroundColor: '#007BFF',  // Primary color for buttons
+    backgroundColor: '#007BFF', 
     borderRadius: 10,
     padding: 15,
     alignItems: 'center',
     marginBottom: 20,
   },
   buttonText: {
-    color: '#FFFFFF',  // White text for contrast
+    color: '#FFFFFF',
     fontSize: 18,
     fontWeight: 'bold',
-  },
-  image: {
-    width: '100%',  // Full width image
-    height: undefined,
-    aspectRatio: 3 / 4,  // Maintain aspect ratio
-    borderRadius: 10,
-    marginTop: 20,
   },
 });

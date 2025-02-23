@@ -103,8 +103,8 @@ export default function RouteMaker() {
     }
   };
 
-  // Get stroke color based on the hold type
-  const getStrokeColor = (holdType?: HoldType) => {
+  // Get stroke colour based on the hold type
+  const getStrokeColour = (holdType?: HoldType) => {
     switch (holdType) {
       case 'intermediate':
         return 'green';
@@ -155,7 +155,7 @@ export default function RouteMaker() {
                 y={y - height / 2}
                 width={width}
                 height={height}
-                stroke={getStrokeColor(holdType)}
+                stroke={getStrokeColour(holdType)}
                 strokeWidth="16"
                 fill="rgba(0,0,0,0.01)"
                 onPress={() => handleSelectHold(index)}
@@ -171,7 +171,7 @@ export default function RouteMaker() {
       <Button title="Save Route" onPress={handleSaveRoute} />
       <Text>Holds selected: {Object.keys(holdSelections).length}</Text>
 
-      {/* Color-coded legend */}
+      {/* Colour-coded legend */}
       <View style={styles.legend}>
         <Text style={[styles.legendItem, { color: 'red' }]}>Red: Not Selected</Text>
         <Text style={[styles.legendItem, { color: 'green' }]}>Green: Intermediate Hold</Text>

@@ -8,14 +8,12 @@ interface RouteState {
   startHolds: number[];
   endHolds: number[];
   selectedHolds: RouteHold[];
-  routes: RouteHold[][];
 }
 
 const initialState: RouteState = {
   startHolds: [],
   endHolds: [],
   selectedHolds: [],
-  routes: [],
 };
 
 const routesSlice = createSlice({
@@ -31,10 +29,6 @@ const routesSlice = createSlice({
       state.selectedHolds = state.selectedHolds.filter(
         id => id !== action.payload
       );
-    },
-    saveRoute: (state) => {
-      state.routes.push([...state.selectedHolds]);
-      state.selectedHolds = [];
     },
     clearSelectedHolds: (state) => {
       state.selectedHolds = [];
