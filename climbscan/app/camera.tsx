@@ -45,7 +45,7 @@ export default function CameraScreen() {
         formData.append('image', { uri, type: 'image/jpeg', name: 'photo.jpg' });
         
 
-        const apiResponse = await fetch('http://192.168.185.235:5000/detect', {
+        const apiResponse = await fetch('http://192.168.1.12:5000/detect', {
           method: 'POST',
           body: formData,
           headers: {
