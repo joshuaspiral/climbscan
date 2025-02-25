@@ -1,127 +1,62 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, Button, Image } from 'react-native';
+import React, { useState, useRef } from 'react';
+import { View, Text, StyleSheet, Button, Image, Alert } from 'react-native';
 import { useSelector } from 'react-redux';
 import { useRouter } from 'expo-router';
 import Svg, { Rect } from 'react-native-svg';
 import * as FileSystem from 'expo-file-system';
 import * as MediaLibrary from 'expo-media-library';
 import * as Sharing from 'expo-sharing';
-
-// Define interface for hold detection bounding box coordinates
-interface Detection {
-  bounding_box: [number, number, number, number];
-}
-
-interface State {
-  detections: {
-    photoUri: string;
-    photoDimensions: { width: number; height: number };
-    detections: Detection[];
-  };
-}
-
-// Define possible types of holds
-type HoldType = 'intermediate' | 'start' | 'end';
+import { captureRef } from 'react-native-view-shot';
 
 export default function RouteMaker() {
   const router = useRouter();
 
-  // Retrieve data from the Redux store
-  const { photoUri, photoDimensions, detections } = useSelector(
-    (state: State) => state.detections
-  );
-
+  // Retrieve data from Redux store
+  const { photoUri, photoDimensions, detections } = useSelector((state) => state.detections);
   const [containerLayout, setContainerLayout] = useState({ width: 0, height: 0 });
-  
-  // Hold selections with type mapping (start, intermediate, end)
-  const [holdSelections, setHoldSelections] = useState<{ [key: number]: HoldType }>({});
+  const [holdSelections, setHoldSelections] = useState({});
 
-  // Handle the layout not being available
-  if (!photoDimensions || !detections) {
-    return (
-      <View style={styles.container}>
-        <Text>Loading...</Text>
-      </View>
-    );
-  }
+  // Reference for capturing the view
+  const captureViewRef = useRef<View>(null);
 
-  // Calculate image scaling and offset for display
-  const containerAspect = containerLayout.width / containerLayout.height;
-  const imageAspect = photoDimensions.width / photoDimensions.height;
-
-  let displayedWidth = containerLayout.width;
-  let displayedHeight = containerLayout.height;
-  let offsetX = 0;
-  let offsetY = 0;
-
-  if (imageAspect > containerAspect) {
-    displayedHeight = containerLayout.width / imageAspect;
-    offsetY = (containerLayout.height - displayedHeight) / 2;
-  } else {
-    displayedWidth = containerLayout.height * imageAspect;
-    offsetX = (containerLayout.width - displayedWidth) / 2;
-  }
-
-  // Handle toggling between different hold types
-  const handleSelectHold = (index: number) => {
-    setHoldSelections((prev) => {
-      const current = prev[index];
-      if (!current) {
-        return { ...prev, [index]: 'intermediate' };
-      } else if (current === 'intermediate') {
-        return { ...prev, [index]: 'start' };
-      } else if (current === 'start') {
-        return { ...prev, [index]: 'end' };
-      } else if (current === 'end') {
-        const newSelections = { ...prev };
-        delete newSelections[index];
-        return newSelections;
-      }
-      return prev;
-    });
-  };
-
-  // Clear all selected holds
-  const handleClearSelection = () => {
-    setHoldSelections({});
-  };
-
-  // Save the route image
   const handleSaveRoute = async () => {
     try {
-      const imageName = `${FileSystem.documentDirectory}route.png`;
-      const downloadImage = await FileSystem.downloadAsync(photoUri, imageName);
-      const { status } = await MediaLibrary.requestPermissionsAsync();
-
-      if (status === 'granted') {
-        await MediaLibrary.createAssetAsync(downloadImage.uri);
-        Sharing.shareAsync(downloadImage.uri);
-        alert('Route saved and ready to share!');
+      if (!captureViewRef.current) {
+        Alert.alert("Error", "View not ready for capture. Try again.");
+        return;
       }
+  
+      const uri = await captureRef(captureViewRef.current, {
+        format: 'png',
+        quality: 1,
+      });
+  
+      // Request permission to save to gallery
+      const { status } = await MediaLibrary.requestPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert("Permission Denied", "Media Library access is required to save the route.");
+        return;
+      }
+  
+      // Save and share the image
+      const asset = await MediaLibrary.createAssetAsync(uri);
+      await MediaLibrary.createAlbumAsync('ClimbRoutes', asset, false);
+      await Sharing.shareAsync(uri);
+  
+      Alert.alert("Success", "Route saved and ready to share!");
     } catch (error) {
-      alert('Error saving the route.');
+      console.error("Error saving route:", error);
+      Alert.alert("Error", "Failed to save the route.");
     }
   };
-
-  // Get stroke colour based on the hold type
-  const getStrokeColour = (holdType?: HoldType) => {
-    switch (holdType) {
-      case 'intermediate':
-        return 'green';
-      case 'start':
-        return 'blue';
-      case 'end':
-        return 'purple';
-      default:
-        return 'red';
-    }
-  };
+  
 
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Select Holds for Your Route</Text>
-      
+
       <View
+        ref={captureViewRef} // Ref for capturing
         style={styles.imageContainer}
         onLayout={(event) => {
           const { width, height } = event.nativeEvent.layout;
@@ -130,17 +65,11 @@ export default function RouteMaker() {
       >
         <Image source={{ uri: photoUri }} style={styles.image} resizeMode="contain" />
         <Svg
-          style={{
-            position: 'absolute',
-            left: offsetX,
-            top: offsetY,
-            width: displayedWidth,
-            height: displayedHeight,
-          }}
+          style={{ position: 'absolute', left: 0, top: 0, width: '100%', height: '100%' }}
           viewBox={`0 0 ${photoDimensions.width} ${photoDimensions.height}`}
           pointerEvents="box-none"
         >
-          {detections.map((detection: Detection, index: number) => {
+          {detections.map((detection, index) => {
             const [normX, normY, normWidth, normHeight] = detection.bounding_box;
             const x = normX * photoDimensions.width;
             const y = normY * photoDimensions.height;
@@ -155,29 +84,16 @@ export default function RouteMaker() {
                 y={y - height / 2}
                 width={width}
                 height={height}
-                stroke={getStrokeColour(holdType)}
+                stroke={'red'}
                 strokeWidth="16"
                 fill="rgba(0,0,0,0.01)"
-                onPress={() => handleSelectHold(index)}
-                pointerEvents="auto"
               />
             );
           })}
         </Svg>
       </View>
-      
-      {/* Buttons for user actions */}
-      <Button title="Clear Selection" onPress={handleClearSelection} />
-      <Button title="Save Route" onPress={handleSaveRoute} />
-      <Text>Holds selected: {Object.keys(holdSelections).length}</Text>
 
-      {/* Colour-coded legend */}
-      <View style={styles.legend}>
-        <Text style={[styles.legendItem, { color: 'red' }]}>Red: Not Selected</Text>
-        <Text style={[styles.legendItem, { color: 'green' }]}>Green: Intermediate Hold</Text>
-        <Text style={[styles.legendItem, { color: 'blue' }]}>Blue: Start Hold</Text>
-        <Text style={[styles.legendItem, { color: 'purple' }]}>Purple: End Hold</Text>
-      </View>
+      <Button title="Save Route" onPress={handleSaveRoute} />
     </View>
   );
 }
@@ -206,11 +122,5 @@ const styles = StyleSheet.create({
     flex: 1,
     borderRadius: 10,
   },
-  legend: {
-    marginTop: 20,
-  },
-  legendItem: {
-    fontSize: 16,
-    marginVertical: 4,
-  },
 });
+
